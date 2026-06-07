@@ -6,6 +6,10 @@
 
 它是普通 CLI 包，运行时不依赖 Codex、ChatGPT、OpenAI API 或任何 AI 能力。
 
+## GUI 效果图
+
+![GUI 效果图](docs/assets/gui-url-export.png)
+
 ## 能做什么
 
 - 提供中文桌面 GUI，适合先从粘贴网址、点选文件和填写表单开始。

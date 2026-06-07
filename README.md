@@ -6,6 +6,10 @@ Reusable Python GUI and command-line tools for collecting, cleaning, filtering, 
 
 This is a normal CLI package. It does not require Codex, ChatGPT, OpenAI APIs, or any AI runtime.
 
+## GUI Preview
+
+![GUI preview](docs/assets/gui-url-export.png)
+
 ## What You Can Do
 
 - Use a Chinese beginner-friendly desktop GUI for URL-to-Excel export, CSV cleaning, and API collection.

@@ -192,28 +192,29 @@ class JobPostingApp(tk.Tk):
             wraplength=780,
         )
         intro.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 12))
-        self._entry_row(frame, 1, "招聘网址", self.url_vars["url"], "粘贴公开招聘页面网址")
-        self._path_row(frame, 2, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
-        self._entry_row(frame, 3, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
-        self._entry_row(frame, 4, "岗位/关键词筛选", self.url_vars["keywords"], "匹配公司、标题、行业、岗位，可留空")
-        ttk.Label(frame, text="发布日期范围", style="Field.TLabel").grid(row=5, column=0, sticky="w", pady=8, padx=(0, 12))
+        self._supported_sites_panel(frame, 1)
+        self._entry_row(frame, 2, "招聘网址", self.url_vars["url"], "粘贴公开招聘页面网址")
+        self._path_row(frame, 3, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
+        self._entry_row(frame, 4, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
+        self._entry_row(frame, 5, "岗位/关键词筛选", self.url_vars["keywords"], "匹配公司、标题、行业、岗位，可留空")
+        ttk.Label(frame, text="发布日期范围", style="Field.TLabel").grid(row=6, column=0, sticky="w", pady=8, padx=(0, 12))
         ttk.Combobox(
             frame,
             textvariable=self.url_vars["date_range"],
             values=list(DATE_RANGE_OPTIONS.keys()),
             width=16,
             state="readonly",
-        ).grid(row=5, column=1, sticky="w", pady=8)
+        ).grid(row=6, column=1, sticky="w", pady=8)
         ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年", style="Hint.TLabel", wraplength=260).grid(
-            row=5, column=2, sticky="ew", padx=(14, 0)
+            row=6, column=2, sticky="ew", padx=(14, 0)
         )
-        self._entry_row(frame, 6, "最多导出条数", self.url_vars["max_records"], "筛选前最多保留多少条；可改小以快速测试")
-        self._entry_row(frame, 7, "高亮关键词", self.url_vars["highlight_keywords"], "留空时使用岗位/关键词筛选")
-        self._color_row(frame, 8)
-        self._entry_row(frame, 9, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
+        self._entry_row(frame, 7, "最多导出条数", self.url_vars["max_records"], "筛选前最多保留多少条；可改小以快速测试")
+        self._entry_row(frame, 8, "高亮关键词", self.url_vars["highlight_keywords"], "留空时使用岗位/关键词筛选")
+        self._color_row(frame, 9)
+        self._entry_row(frame, 10, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
 
         actions = ttk.Frame(frame, style="Card.TFrame")
-        actions.grid(row=10, column=1, sticky="w", pady=(16, 0))
+        actions.grid(row=11, column=1, sticky="w", pady=(16, 0))
         ttk.Button(actions, text="一键导出 Excel", style="Accent.TButton", command=self.run_url_export).pack(side="left")
         ttk.Button(actions, text="打开输出文件夹", style="Secondary.TButton", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
             side="left", padx=(10, 0)
@@ -332,6 +333,18 @@ class JobPostingApp(tk.Tk):
         ttk.Label(parent, text="用于标出命中关键词的单元格", style="Hint.TLabel", wraplength=260).grid(
             row=row, column=2, sticky="ew", padx=(14, 0)
         )
+
+    def _supported_sites_panel(self, parent: ttk.Frame, row: int) -> None:
+        panel = ttk.LabelFrame(parent, text="支持自动抓取的网站", padding=(12, 8), style="Card.TLabelframe")
+        panel.grid(row=row, column=0, columnspan=3, sticky="ew", pady=(0, 12))
+        panel.columnconfigure(0, weight=1)
+        sites = [
+            "offer.gfjianli.com：可直接粘贴公开招聘页面，自动导出 Excel。",
+            "带结构化 __NUXT_DATA__ 的公开招聘页：可读取页面内嵌岗位数据。",
+            "公开 JSON API：在“接口采集”页填写接口地址、参数和列表路径后采集。",
+        ]
+        for index, text in enumerate(sites):
+            ttk.Label(panel, text=text, style="Hint.TLabel", wraplength=820).grid(row=index, column=0, sticky="ew", pady=2)
 
     @staticmethod
     def _configure_grid(frame: ttk.Frame) -> None:

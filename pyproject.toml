@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "job-posting-gui-tool"
 version = "0.3.1"
-description = "AI-free CLI and GUI tools for collecting, cleaning, filtering, and reporting job postings."
+description = "GUI-first Python tool for collecting, cleaning, filtering, and reporting job postings."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

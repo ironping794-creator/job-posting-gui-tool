@@ -2,9 +2,9 @@
 
 [English](README.en.md) | [简体中文](README.md)
 
-Reusable Python GUI and command-line tools for collecting, cleaning, filtering, and reporting public job postings.
+Reusable GUI-first Python tool for collecting, cleaning, filtering, and reporting public job postings.
 
-This is a normal CLI package. It does not require Codex, ChatGPT, OpenAI APIs, or any AI runtime.
+This is a normal Python package. It does not require Codex, ChatGPT, OpenAI APIs, or any AI runtime.
 
 ## GUI Preview
 

@@ -97,10 +97,11 @@ def export_known_recruitment_site(
         "total_reported": data.get("total"),
         "rows_exported": len(rows),
         "max_records": max_records,
+        "scan_limit": max_records,
         "city_filter": cities,
         "keyword_filter": keywords,
         "published_within_days": published_within_days,
-        "note": "If total_reported is greater than rows_exported, increase max_records or provide an authorized token.",
+        "note": "scan_limit/max_records is the maximum number of source records read before filters are applied. If the data source reports more rows than the scan limit, increase it or provide authorization when appropriate.",
     }
     (out_dir / f"招聘信息导出摘要_{timestamp}.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
@@ -207,7 +208,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Paste a supported job site URL and export an Excel workbook.")
     parser.add_argument("url")
     parser.add_argument("--out-dir", default="outputs/url_export")
-    parser.add_argument("--max-records", type=int, default=20000)
+    parser.add_argument("--max-records", type=int, default=20000, help="Maximum source records to scan before filters are applied.")
     parser.add_argument("--token", default="", help="Optional site token for authorized exports.")
     parser.add_argument("--cities", default="", help="Optional city filter, comma-separated.")
     parser.add_argument("--keywords", default="", help="Optional title/company/position keyword filter, comma-separated.")

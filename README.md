@@ -92,6 +92,8 @@ job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algor
 
 The tool writes `招聘信息导出_TIMESTAMP.xlsx` plus a JSON export summary. If authorized data requires a login token, use the GUI field `登录 Token（可选）` or pass:
 
+`--max-records` / the GUI field `最多扫描条数` means the maximum number of source records to read before filters are applied. It is not the final Excel row count. The final export is filtered by city, keyword, and publication-date settings. If a data source has no practical limit, there is no need to call out a limit; if the source/API has a limit, the summary JSON records both the scan limit and exported row count.
+
 ```bash
 job-postings url "JOB_PAGE_URL" --token "YOUR_TOKEN" --out-dir outputs/url_export
 ```

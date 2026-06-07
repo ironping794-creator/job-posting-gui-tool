@@ -37,8 +37,8 @@ class JobPostingApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(f"招聘岗位数据工具 {__version__}")
-        self.geometry("1120x840")
-        self.minsize(980, 720)
+        self.geometry("1040x760")
+        self.minsize(720, 560)
         self.configure(background=BG)
         self.option_add("*Font", ("Microsoft YaHei UI", 10))
 
@@ -131,15 +131,15 @@ class JobPostingApp(tk.Tk):
 
         notebook = ttk.Notebook(root)
         notebook.pack(fill="both", expand=True)
-        notebook.add(self._url_tab(notebook), text="粘贴网址导出")
-        notebook.add(self._clean_tab(notebook), text="清洗 CSV")
-        notebook.add(self._collect_tab(notebook), text="接口采集")
+        notebook.add(self._scrollable_tab(notebook, self._url_tab), text="粘贴网址导出")
+        notebook.add(self._scrollable_tab(notebook, self._clean_tab), text="清洗 CSV")
+        notebook.add(self._scrollable_tab(notebook, self._collect_tab), text="接口采集")
 
         log_frame = ttk.LabelFrame(root, text="运行日志", padding=12, style="Card.TLabelframe")
         log_frame.pack(fill="both", expand=False, pady=(14, 0))
         self.log = tk.Text(
             log_frame,
-            height=7,
+            height=6,
             wrap="word",
             borderwidth=0,
             relief="flat",
@@ -154,15 +154,44 @@ class JobPostingApp(tk.Tk):
         scrollbar.pack(side="right", fill="y")
         self.log.configure(yscrollcommand=scrollbar.set)
 
-    def _url_tab(self, parent: ttk.Notebook) -> ttk.Frame:
+    def _scrollable_tab(self, parent: ttk.Notebook, builder) -> ttk.Frame:
+        outer = ttk.Frame(parent, style="Card.TFrame")
+        outer.rowconfigure(0, weight=1)
+        outer.columnconfigure(0, weight=1)
+
+        canvas = tk.Canvas(outer, borderwidth=0, highlightthickness=0, background=CARD)
+        scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        content = builder(canvas)
+        window_id = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
+
+        def sync_scroll_region(_: tk.Event | None = None) -> None:
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        def sync_content_width(event: tk.Event) -> None:
+            canvas.itemconfigure(window_id, width=event.width)
+
+        def on_mousewheel(event: tk.Event) -> None:
+            canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        content.bind("<Configure>", sync_scroll_region)
+        canvas.bind("<Configure>", sync_content_width)
+        outer.bind("<Enter>", lambda _: canvas.bind_all("<MouseWheel>", on_mousewheel))
+        outer.bind("<Leave>", lambda _: canvas.unbind_all("<MouseWheel>"))
+        return outer
+
+    def _url_tab(self, parent: tk.Misc) -> ttk.Frame:
         frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         intro = ttk.Label(
             frame,
             text="把公开招聘页面网址粘贴进来，按需填写筛选条件，点击按钮导出 Excel。请只导出你有权限访问的数据。",
             style="Hint.TLabel",
-            wraplength=820,
+            wraplength=780,
         )
-        intro.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
+        intro.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 12))
         self._entry_row(frame, 1, "招聘网址", self.url_vars["url"], "粘贴公开招聘页面网址")
         self._path_row(frame, 2, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
         self._entry_row(frame, 3, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
@@ -175,7 +204,9 @@ class JobPostingApp(tk.Tk):
             width=16,
             state="readonly",
         ).grid(row=5, column=1, sticky="w", pady=8)
-        ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年", style="Hint.TLabel").grid(row=5, column=2, sticky="w", padx=(14, 0))
+        ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年", style="Hint.TLabel", wraplength=260).grid(
+            row=5, column=2, sticky="ew", padx=(14, 0)
+        )
         self._entry_row(frame, 6, "最多导出条数", self.url_vars["max_records"], "筛选前最多保留多少条；可改小以快速测试")
         self._entry_row(frame, 7, "高亮关键词", self.url_vars["highlight_keywords"], "留空时使用岗位/关键词筛选")
         self._color_row(frame, 8)
@@ -190,7 +221,7 @@ class JobPostingApp(tk.Tk):
         self._configure_grid(frame)
         return frame
 
-    def _clean_tab(self, parent: ttk.Notebook) -> ttk.Frame:
+    def _clean_tab(self, parent: tk.Misc) -> ttk.Frame:
         frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         self._path_row(frame, 0, "输入 CSV", self.clean_vars["input_csv"], self._choose_csv)
         self._path_row(frame, 1, "输出文件夹", self.clean_vars["out_dir"], self._choose_clean_out_dir)
@@ -210,7 +241,7 @@ class JobPostingApp(tk.Tk):
         self._configure_grid(frame)
         return frame
 
-    def _collect_tab(self, parent: ttk.Notebook) -> ttk.Frame:
+    def _collect_tab(self, parent: tk.Misc) -> ttk.Frame:
         frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         self._entry_row(frame, 0, "接口地址", self.collect_vars["url"], "https://example.com/api/jobs")
         ttk.Label(frame, text="请求方法", style="Field.TLabel").grid(row=1, column=0, sticky="w", pady=8, padx=(0, 12))
@@ -219,17 +250,19 @@ class JobPostingApp(tk.Tk):
         )
 
         ttk.Label(frame, text="请求头 JSON", style="Field.TLabel").grid(row=2, column=0, sticky="nw", pady=8, padx=(0, 12))
-        self.headers_text = tk.Text(frame, height=4, width=70, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
+        self.headers_text = tk.Text(frame, height=4, width=1, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
         self.headers_text.insert("1.0", "{}")
         self.headers_text.grid(row=2, column=1, sticky="ew", pady=8)
 
         ttk.Label(frame, text="参数 JSON", style="Field.TLabel").grid(row=3, column=0, sticky="nw", pady=8, padx=(0, 12))
-        self.payload_text = tk.Text(frame, height=5, width=70, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
+        self.payload_text = tk.Text(frame, height=5, width=1, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
         self.payload_text.insert("1.0", "{}")
         self.payload_text.grid(row=3, column=1, sticky="ew", pady=8)
 
         paths = ttk.Frame(frame, style="Card.TFrame")
         paths.grid(row=4, column=1, sticky="ew", pady=8)
+        paths.columnconfigure(1, weight=1)
+        paths.columnconfigure(3, weight=1)
         for index, (label, key, width) in enumerate(
             [
                 ("页码", "page_param", 10),
@@ -239,11 +272,15 @@ class JobPostingApp(tk.Tk):
                 ("总页路径", "pages_path", 14),
             ]
         ):
-            ttk.Label(paths, text=label, style="Hint.TLabel").grid(row=0, column=index * 2, sticky="w", padx=(0, 5))
-            ttk.Entry(paths, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 10))
+            row = index // 2
+            column = (index % 2) * 2
+            ttk.Label(paths, text=label, style="Hint.TLabel").grid(row=row, column=column, sticky="w", padx=(0, 5), pady=4)
+            ttk.Entry(paths, textvariable=self.collect_vars[key], width=width).grid(row=row, column=column + 1, sticky="ew", padx=(0, 12), pady=4)
 
         numbers = ttk.Frame(frame, style="Card.TFrame")
         numbers.grid(row=5, column=1, sticky="ew", pady=8)
+        numbers.columnconfigure(1, weight=1)
+        numbers.columnconfigure(3, weight=1)
         for index, (label, key, width) in enumerate(
             [
                 ("每页数量", "page_size", 8),
@@ -253,8 +290,10 @@ class JobPostingApp(tk.Tk):
                 ("超时", "timeout", 8),
             ]
         ):
-            ttk.Label(numbers, text=label, style="Hint.TLabel").grid(row=0, column=index * 2, sticky="w", padx=(0, 5))
-            ttk.Entry(numbers, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 10))
+            row = index // 2
+            column = (index % 2) * 2
+            ttk.Label(numbers, text=label, style="Hint.TLabel").grid(row=row, column=column, sticky="w", padx=(0, 5), pady=4)
+            ttk.Entry(numbers, textvariable=self.collect_vars[key], width=width).grid(row=row, column=column + 1, sticky="ew", padx=(0, 12), pady=4)
 
         self._path_row(frame, 6, "输出文件夹", self.collect_vars["out_dir"], self._choose_collect_out_dir)
         ttk.Checkbutton(frame, text="同时导出格式化 XLSX 文件", variable=self.collect_vars["xlsx"]).grid(
@@ -275,7 +314,7 @@ class JobPostingApp(tk.Tk):
         entry = ttk.Entry(parent, textvariable=variable)
         entry.grid(row=row, column=1, sticky="ew", pady=8)
         if placeholder:
-            ttk.Label(parent, text=placeholder, style="Hint.TLabel").grid(row=row, column=2, sticky="w", padx=(14, 0))
+            ttk.Label(parent, text=placeholder, style="Hint.TLabel", wraplength=260).grid(row=row, column=2, sticky="ew", padx=(14, 0))
 
     def _path_row(self, parent: ttk.Frame, row: int, label: str, variable: tk.StringVar, command) -> None:
         ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=8, padx=(0, 12))
@@ -290,11 +329,15 @@ class JobPostingApp(tk.Tk):
         ttk.Button(color_frame, text="选择颜色", style="Secondary.TButton", command=self._choose_highlight_color).pack(side="left", padx=(10, 0))
         self.highlight_swatch = tk.Label(color_frame, width=4, height=1, background=self.url_vars["highlight_color"].get(), relief="flat")
         self.highlight_swatch.pack(side="left", padx=(10, 0), ipadx=8, ipady=5)
-        ttk.Label(parent, text="用于标出命中关键词的单元格", style="Hint.TLabel").grid(row=row, column=2, sticky="w", padx=(14, 0))
+        ttk.Label(parent, text="用于标出命中关键词的单元格", style="Hint.TLabel", wraplength=260).grid(
+            row=row, column=2, sticky="ew", padx=(14, 0)
+        )
 
     @staticmethod
     def _configure_grid(frame: ttk.Frame) -> None:
+        frame.columnconfigure(0, minsize=120)
         frame.columnconfigure(1, weight=1)
+        frame.columnconfigure(2, weight=1)
 
     def _choose_csv(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("CSV 文件", "*.csv"), ("所有文件", "*.*")])

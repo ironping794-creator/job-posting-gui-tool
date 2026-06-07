@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib import parse, request
@@ -35,6 +35,7 @@ def export_url(
     token: str = "",
     cities: str = "",
     keywords: str = "",
+    published_within_days: int | None = None,
 ) -> Path:
     normalized = url.strip()
     if not normalized:
@@ -49,6 +50,7 @@ def export_url(
             token=token,
             cities=cities,
             keywords=keywords,
+            published_within_days=published_within_days,
         )
     raise ValueError("暂未识别该网址的数据结构。你可以使用“接口采集”标签页手动配置公开 JSON API。")
 
@@ -60,6 +62,7 @@ def export_known_recruitment_site(
     token: str = "",
     cities: str = "",
     keywords: str = "",
+    published_within_days: int | None = None,
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     query = {"limit": max_records}
@@ -82,7 +85,7 @@ def export_known_recruitment_site(
         raise RuntimeError("网站接口没有返回岗位列表。")
 
     rows = [normalize_site_row(row, url) for row in raw_rows if isinstance(row, dict)]
-    rows = filter_export_rows(rows, cities, keywords)
+    rows = filter_export_rows(rows, cities, keywords, published_within_days)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     xlsx_path = out_dir / f"招聘信息导出_{timestamp}.xlsx"
     write_xlsx(xlsx_path, rows, EXPORT_FIELDS, "招聘信息")
@@ -96,6 +99,7 @@ def export_known_recruitment_site(
         "max_records": max_records,
         "city_filter": cities,
         "keyword_filter": keywords,
+        "published_within_days": published_within_days,
         "note": "If total_reported is greater than rows_exported, increase max_records or provide an authorized token.",
     }
     (out_dir / f"招聘信息导出摘要_{timestamp}.json").write_text(
@@ -143,10 +147,21 @@ def split_filter_terms(value: str) -> list[str]:
     return [item.strip().lower() for item in text.split(",") if item.strip()]
 
 
-def filter_export_rows(rows: list[dict[str, str]], cities: str = "", keywords: str = "") -> list[dict[str, str]]:
+def filter_export_rows(
+    rows: list[dict[str, str]],
+    cities: str = "",
+    keywords: str = "",
+    published_within_days: int | None = None,
+) -> list[dict[str, str]]:
     city_terms = split_filter_terms(cities)
     keyword_terms = split_filter_terms(keywords)
-    if not city_terms and not keyword_terms:
+    cutoff = None
+    if published_within_days is not None:
+        if published_within_days <= 0:
+            raise ValueError("发布日期范围天数必须大于 0。")
+        cutoff = datetime.now() - timedelta(days=published_within_days)
+
+    if not city_terms and not keyword_terms and cutoff is None:
         return rows
 
     filtered: list[dict[str, str]] = []
@@ -163,9 +178,29 @@ def filter_export_rows(rows: list[dict[str, str]], cities: str = "", keywords: s
         ).lower()
         city_ok = not city_terms or any(term in city_text for term in city_terms)
         keyword_ok = not keyword_terms or any(term in keyword_text for term in keyword_terms)
-        if city_ok and keyword_ok:
+        date_ok = cutoff is None or is_published_after(row.get("发布时间", ""), cutoff)
+        if city_ok and keyword_ok and date_ok:
             filtered.append(row)
     return filtered
+
+
+def is_published_after(value: str, cutoff: datetime) -> bool:
+    parsed = parse_datetime(value)
+    return parsed is not None and parsed >= cutoff
+
+
+def parse_datetime(value: str) -> datetime | None:
+    text = (value or "").strip()
+    if not text:
+        return None
+    candidates = [text, text[:19], text[:10]]
+    for candidate in candidates:
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%Y/%m/%d %H:%M:%S", "%Y/%m/%d"):
+            try:
+                return datetime.strptime(candidate, fmt)
+            except ValueError:
+                continue
+    return None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -176,10 +211,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--token", default="", help="Optional site token for authorized exports.")
     parser.add_argument("--cities", default="", help="Optional city filter, comma-separated.")
     parser.add_argument("--keywords", default="", help="Optional title/company/position keyword filter, comma-separated.")
+    parser.add_argument("--published-within-days", type=int, default=None, help="Only keep records published in the last N days.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
-    path = export_url(args.url, args.out_dir, args.max_records, args.token, args.cities, args.keywords)
+    path = export_url(
+        args.url,
+        args.out_dir,
+        args.max_records,
+        args.token,
+        args.cities,
+        args.keywords,
+        args.published_within_days,
+    )
     print(path)

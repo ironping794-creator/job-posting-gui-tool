@@ -14,6 +14,14 @@ from .clean import run as run_clean
 from .collect import collect as run_collect
 from .url_export import export_url
 
+DATE_RANGE_OPTIONS = {
+    "不限": None,
+    "近 1 个月": 30,
+    "近 3 个月": 90,
+    "近半年": 180,
+    "近 1 年": 365,
+}
+
 
 class JobPostingApp(tk.Tk):
     def __init__(self) -> None:
@@ -28,6 +36,7 @@ class JobPostingApp(tk.Tk):
             "max_records": tk.StringVar(value="20000"),
             "cities": tk.StringVar(),
             "keywords": tk.StringVar(),
+            "date_range": tk.StringVar(value="不限"),
             "token": tk.StringVar(),
         }
         self.clean_vars = {
@@ -95,11 +104,20 @@ class JobPostingApp(tk.Tk):
         self._path_row(frame, 2, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
         self._entry_row(frame, 3, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
         self._entry_row(frame, 4, "岗位/关键词筛选", self.url_vars["keywords"], "匹配公司、标题、行业、岗位，可留空")
-        self._entry_row(frame, 5, "最多导出条数", self.url_vars["max_records"], "可改小以快速测试")
-        self._entry_row(frame, 6, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
+        ttk.Label(frame, text="发布日期范围").grid(row=5, column=0, sticky="w", pady=6)
+        ttk.Combobox(
+            frame,
+            textvariable=self.url_vars["date_range"],
+            values=list(DATE_RANGE_OPTIONS.keys()),
+            width=16,
+            state="readonly",
+        ).grid(row=5, column=1, sticky="w", pady=6)
+        ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年").grid(row=5, column=2, sticky="w", padx=(8, 0))
+        self._entry_row(frame, 6, "最多导出条数", self.url_vars["max_records"], "可改小以快速测试")
+        self._entry_row(frame, 7, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
 
         actions = ttk.Frame(frame)
-        actions.grid(row=7, column=1, sticky="w", pady=(12, 0))
+        actions.grid(row=8, column=1, sticky="w", pady=(12, 0))
         ttk.Button(actions, text="一键导出 Excel", command=self.run_url_export).pack(side="left")
         ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
             side="left", padx=(8, 0)
@@ -250,9 +268,10 @@ class JobPostingApp(tk.Tk):
         token = self.url_vars["token"].get().strip()
         cities = self.url_vars["cities"].get().strip()
         keywords = self.url_vars["keywords"].get().strip()
+        published_within_days = DATE_RANGE_OPTIONS.get(self.url_vars["date_range"].get())
         self._run_background(
             "网址导出 Excel",
-            lambda: export_url(url, out_dir, max_records, token, cities, keywords),
+            lambda: export_url(url, out_dir, max_records, token, cities, keywords, published_within_days),
             out_dir,
         )
 

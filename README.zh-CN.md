@@ -9,7 +9,7 @@
 ## 能做什么
 
 - 提供中文桌面 GUI，适合先从粘贴网址、点选文件和填写表单开始。
-- 支持把可访问的招聘页面导出为 Excel，并可按城市、岗位或关键词筛选。
+- 支持把可访问的招聘页面导出为 Excel，并可按城市、岗位/关键词、发布日期范围筛选。
 - 从公开分页 JSON API 采集岗位数据，并记录采集元信息。
 - 清洗 CSV 导出文件，自动识别常见中英文列名。
 - 规范化薪资区间、城市、关键词匹配和重复岗位。
@@ -31,7 +31,7 @@ python -m pip install -e .
 ```bash
 job-postings --help
 job-postings-gui
-job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --out-dir outputs/url_export
+job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --published-within-days 180 --out-dir outputs/url_export
 job-postings collect --help
 job-postings clean --help
 ```
@@ -62,7 +62,7 @@ job-postings-gui
 
 桌面窗口里有三个标签页：
 
-- `粘贴网址导出`：粘贴可访问的招聘页面网址，填写城市、岗位/关键词筛选，一键导出 Excel。
+- `粘贴网址导出`：粘贴可访问的招聘页面网址，填写城市、岗位/关键词、发布日期范围筛选，一键导出 Excel。
 - `Clean CSV`：选择输入 CSV，填写城市、关键词、最低薪资，选择输出目录，然后点击 `Run Clean`。
 - `Collect API`：填写 API URL、请求方法、JSON payload、JSON 路径、采集数量、输出目录，然后点击 `Run Collect`。
 
@@ -70,7 +70,7 @@ job-postings-gui
 
 1. 打开 `粘贴网址导出`。
 2. 把招聘页面网址粘贴到 `招聘网址`。
-3. 按需填写 `城市筛选` 和 `岗位/关键词筛选`。
+3. 按需填写 `城市筛选`、`岗位/关键词筛选`，并选择 `发布日期范围`。
 4. 点击 `一键导出 Excel`。
 5. 完成后点击 `打开输出文件夹` 查看 `.xlsx`。
 
@@ -87,7 +87,7 @@ job-postings url "招聘页面网址" --out-dir outputs/url_export
 也可以增加筛选：
 
 ```bash
-job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --out-dir outputs/url_export
+job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --published-within-days 180 --out-dir outputs/url_export
 ```
 
 工具会生成 `招聘信息导出_时间戳.xlsx` 和导出摘要 JSON。如果网站需要登录授权，可在 GUI 的 `登录 Token（可选）` 中填写 token，或用命令行参数：
@@ -210,7 +210,7 @@ job-postings-gui
 粘贴招聘页面网址直接导出 Excel，并按城市和岗位关键词筛选：
 
 ```bash
-job-postings url "招聘页面网址" --cities "上海" --keywords "算法,AI" --out-dir outputs/url_export
+job-postings url "招聘页面网址" --cities "上海" --keywords "算法,AI" --published-within-days 30 --out-dir outputs/url_export
 ```
 
 筛选上海和北京的 AI / 大模型岗位，最低薪资 10000，并导出 XLSX：

@@ -9,7 +9,7 @@ This is a normal CLI package. It does not require Codex, ChatGPT, OpenAI APIs, o
 ## What You Can Do
 
 - Use a Chinese beginner-friendly desktop GUI for URL-to-Excel export, CSV cleaning, and API collection.
-- Export accessible recruitment pages to Excel, with city and position/keyword filters.
+- Export accessible recruitment pages to Excel, with city, position/keyword, and publication-date filters.
 - Collect paginated public JSON APIs with polite delays and capture metadata.
 - Clean CSV exports with English and Chinese column aliases.
 - Normalize salary ranges, city text, keyword matches, and duplicate rows.
@@ -31,7 +31,7 @@ Check that the CLI is available:
 ```bash
 job-postings --help
 job-postings-gui
-job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --out-dir outputs/url_export
+job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --published-within-days 180 --out-dir outputs/url_export
 job-postings collect --help
 job-postings clean --help
 ```
@@ -62,7 +62,7 @@ job-postings-gui
 
 The desktop window has three tabs:
 
-- `粘贴网址导出`: paste an accessible recruitment page URL, optionally fill city and position/keyword filters, and export Excel.
+- `粘贴网址导出`: paste an accessible recruitment page URL, optionally fill city, position/keyword, and publication-date filters, and export Excel.
 - `清洗 CSV`: choose an input CSV, set cities, keywords, minimum salary, choose an output folder, and run cleaning.
 - `接口采集`: enter the API URL, method, JSON payload, JSON paths, limit, output folder, and collect data.
 
@@ -70,7 +70,7 @@ Recommended first run:
 
 1. Open `粘贴网址导出`.
 2. Paste a recruitment page URL into `招聘网址`.
-3. Fill `城市筛选` and `岗位/关键词筛选` if needed.
+3. Fill `城市筛选`, `岗位/关键词筛选`, and `发布日期范围` if needed.
 4. Click `一键导出 Excel`.
 5. Click `打开输出文件夹` when it finishes.
 
@@ -87,7 +87,7 @@ job-postings url "JOB_PAGE_URL" --out-dir outputs/url_export
 You can also filter the export:
 
 ```bash
-job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --out-dir outputs/url_export
+job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --published-within-days 180 --out-dir outputs/url_export
 ```
 
 The tool writes `招聘信息导出_TIMESTAMP.xlsx` plus a JSON export summary. If authorized data requires a login token, use the GUI field `登录 Token（可选）` or pass:

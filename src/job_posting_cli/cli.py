@@ -40,6 +40,7 @@ def main(argv: list[str] | None = None) -> None:
             args.token,
             args.cities,
             args.keywords,
+            args.published_within_days,
         )
         print(path)
     elif args.command == "collect":

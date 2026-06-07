@@ -33,7 +33,14 @@ def main(argv: list[str] | None = None) -> None:
 
     args = parser.parse_args(argv)
     if args.command == "url":
-        path = url_export_cmd.export_url(args.url, args.out_dir, args.max_records, args.token)
+        path = url_export_cmd.export_url(
+            args.url,
+            args.out_dir,
+            args.max_records,
+            args.token,
+            args.cities,
+            args.keywords,
+        )
         print(path)
     elif args.command == "collect":
         collect_cmd.collect(args)

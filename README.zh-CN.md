@@ -9,7 +9,7 @@
 ## 能做什么
 
 - 提供中文桌面 GUI，适合先从粘贴网址、点选文件和填写表单开始。
-- 内置 Offer星球一键导出：粘贴 `https://offer.gfjianli.com/` 即可生成 Excel。
+- 支持把可访问的招聘页面导出为 Excel，并可按城市、岗位或关键词筛选。
 - 从公开分页 JSON API 采集岗位数据，并记录采集元信息。
 - 清洗 CSV 导出文件，自动识别常见中英文列名。
 - 规范化薪资区间、城市、关键词匹配和重复岗位。
@@ -31,7 +31,7 @@ python -m pip install -e .
 ```bash
 job-postings --help
 job-postings-gui
-job-postings url https://offer.gfjianli.com/ --out-dir outputs/offer
+job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --out-dir outputs/url_export
 job-postings collect --help
 job-postings clean --help
 ```
@@ -62,36 +62,38 @@ job-postings-gui
 
 桌面窗口里有三个标签页：
 
-- `粘贴网址导出`：粘贴支持的招聘网站网址，一键导出 Excel。目前已内置支持 Offer星球。
+- `粘贴网址导出`：粘贴可访问的招聘页面网址，填写城市、岗位/关键词筛选，一键导出 Excel。
 - `Clean CSV`：选择输入 CSV，填写城市、关键词、最低薪资，选择输出目录，然后点击 `Run Clean`。
 - `Collect API`：填写 API URL、请求方法、JSON payload、JSON 路径、采集数量、输出目录，然后点击 `Run Collect`。
 
 推荐第一次这样用：
 
 1. 打开 `粘贴网址导出`。
-2. 把 `https://offer.gfjianli.com/` 粘贴到 `招聘网址`。
-3. 保持 `最多导出条数` 为 `20000`。
+2. 把招聘页面网址粘贴到 `招聘网址`。
+3. 按需填写 `城市筛选` 和 `岗位/关键词筛选`。
 4. 点击 `一键导出 Excel`。
 5. 完成后点击 `打开输出文件夹` 查看 `.xlsx`。
 
 GUI 和命令行生成的是同一套文件，所以可以随时在图形界面和 CLI 之间切换。
 
-## 粘贴网址一键导出 Excel
+## 粘贴网址导出 Excel
 
 如果只想要 Excel，不想配置接口参数，使用：
 
 ```bash
-job-postings url https://offer.gfjianli.com/ --out-dir outputs/offer
+job-postings url "招聘页面网址" --out-dir outputs/url_export
 ```
 
-当前内置支持：
-
-- `https://offer.gfjianli.com/`：导出 Offer星球公开校招信息，默认最多请求 20000 条。工具会生成 `offer星球_校招信息_时间戳.xlsx` 和导出摘要 JSON。
-
-如果网站需要登录授权，可在 GUI 的 `登录 Token（可选）` 中填写 token，或用命令行参数：
+也可以增加筛选：
 
 ```bash
-job-postings url https://offer.gfjianli.com/ --token "你的token" --out-dir outputs/offer
+job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --out-dir outputs/url_export
+```
+
+工具会生成 `招聘信息导出_时间戳.xlsx` 和导出摘要 JSON。如果网站需要登录授权，可在 GUI 的 `登录 Token（可选）` 中填写 token，或用命令行参数：
+
+```bash
+job-postings url "招聘页面网址" --token "你的token" --out-dir outputs/url_export
 ```
 
 ## 使用流程
@@ -205,10 +207,10 @@ job-postings clean input.csv \
 job-postings-gui
 ```
 
-粘贴 Offer星球网址直接导出 Excel：
+粘贴招聘页面网址直接导出 Excel，并按城市和岗位关键词筛选：
 
 ```bash
-job-postings url https://offer.gfjianli.com/ --out-dir outputs/offer
+job-postings url "招聘页面网址" --cities "上海" --keywords "算法,AI" --out-dir outputs/url_export
 ```
 
 筛选上海和北京的 AI / 大模型岗位，最低薪资 10000，并导出 XLSX：

@@ -23,9 +23,11 @@ class JobPostingApp(tk.Tk):
         self.minsize(760, 560)
 
         self.url_vars = {
-            "url": tk.StringVar(value="https://offer.gfjianli.com/"),
+            "url": tk.StringVar(),
             "out_dir": tk.StringVar(value="outputs/url_export"),
             "max_records": tk.StringVar(value="20000"),
+            "cities": tk.StringVar(),
+            "keywords": tk.StringVar(),
             "token": tk.StringVar(),
         }
         self.clean_vars = {
@@ -84,18 +86,20 @@ class JobPostingApp(tk.Tk):
         frame = ttk.Frame(parent, padding=14)
         intro = ttk.Label(
             frame,
-            text="把支持的招聘网站网址粘贴进来，点击按钮即可导出 Excel。目前已内置支持 Offer星球：https://offer.gfjianli.com/",
+            text="把公开招聘页面网址粘贴进来，按需填写筛选条件，点击按钮导出 Excel。请只导出你有权限访问的数据。",
             foreground="#444",
             wraplength=760,
         )
         intro.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
-        self._entry_row(frame, 1, "招聘网址", self.url_vars["url"], "例如：https://offer.gfjianli.com/")
+        self._entry_row(frame, 1, "招聘网址", self.url_vars["url"], "粘贴公开招聘页面网址")
         self._path_row(frame, 2, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
-        self._entry_row(frame, 3, "最多导出条数", self.url_vars["max_records"], "Offer星球公开数据建议 20000")
-        self._entry_row(frame, 4, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
+        self._entry_row(frame, 3, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
+        self._entry_row(frame, 4, "岗位/关键词筛选", self.url_vars["keywords"], "匹配公司、标题、行业、岗位，可留空")
+        self._entry_row(frame, 5, "最多导出条数", self.url_vars["max_records"], "可改小以快速测试")
+        self._entry_row(frame, 6, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
 
         actions = ttk.Frame(frame)
-        actions.grid(row=5, column=1, sticky="w", pady=(12, 0))
+        actions.grid(row=7, column=1, sticky="w", pady=(12, 0))
         ttk.Button(actions, text="一键导出 Excel", command=self.run_url_export).pack(side="left")
         ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
             side="left", padx=(8, 0)
@@ -244,7 +248,13 @@ class JobPostingApp(tk.Tk):
             return
         out_dir = self.url_vars["out_dir"].get().strip() or "outputs/url_export"
         token = self.url_vars["token"].get().strip()
-        self._run_background("网址导出 Excel", lambda: export_url(url, out_dir, max_records, token), out_dir)
+        cities = self.url_vars["cities"].get().strip()
+        keywords = self.url_vars["keywords"].get().strip()
+        self._run_background(
+            "网址导出 Excel",
+            lambda: export_url(url, out_dir, max_records, token, cities, keywords),
+            out_dir,
+        )
 
     def run_clean(self) -> None:
         input_csv = self.clean_vars["input_csv"].get().strip()

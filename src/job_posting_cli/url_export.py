@@ -11,8 +11,8 @@ from urllib import parse, request
 from .xlsx import write_xlsx
 
 
-OFFER_API = "https://api.gfjianli.com/api/c/resume/campusRecruitment"
-OFFER_FIELDS = [
+KNOWN_SITE_API = "https://api.gfjianli.com/api/c/resume/campusRecruitment"
+EXPORT_FIELDS = [
     "发布时间",
     "公司",
     "标题",
@@ -28,21 +28,42 @@ OFFER_FIELDS = [
 ]
 
 
-def export_url(url: str, out_dir: str, max_records: int = 20000, token: str = "") -> Path:
+def export_url(
+    url: str,
+    out_dir: str,
+    max_records: int = 20000,
+    token: str = "",
+    cities: str = "",
+    keywords: str = "",
+) -> Path:
     normalized = url.strip()
     if not normalized:
         raise ValueError("请输入网址。")
     parsed = parse.urlparse(normalized)
     host = parsed.netloc.lower()
     if "offer.gfjianli.com" in host:
-        return export_offer_gfjianli(normalized, Path(out_dir), max_records=max_records, token=token)
-    raise ValueError("当前一键导出仅内置支持 offer.gfjianli.com。你仍然可以使用“接口采集”标签页手动配置其他公开 JSON API。")
+        return export_known_recruitment_site(
+            normalized,
+            Path(out_dir),
+            max_records=max_records,
+            token=token,
+            cities=cities,
+            keywords=keywords,
+        )
+    raise ValueError("暂未识别该网址的数据结构。你可以使用“接口采集”标签页手动配置公开 JSON API。")
 
 
-def export_offer_gfjianli(url: str, out_dir: Path, max_records: int = 20000, token: str = "") -> Path:
+def export_known_recruitment_site(
+    url: str,
+    out_dir: Path,
+    max_records: int = 20000,
+    token: str = "",
+    cities: str = "",
+    keywords: str = "",
+) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     query = {"limit": max_records}
-    api_url = f"{OFFER_API}?{parse.urlencode(query)}"
+    api_url = f"{KNOWN_SITE_API}?{parse.urlencode(query)}"
     headers = {
         "User-Agent": "Mozilla/5.0",
         "Origin": "https://offer.gfjianli.com",
@@ -53,17 +74,18 @@ def export_offer_gfjianli(url: str, out_dir: Path, max_records: int = 20000, tok
 
     payload = fetch_json(api_url, headers)
     if payload.get("code") != 200 or not isinstance(payload.get("data"), dict):
-        raise RuntimeError(f"Offer星球接口返回异常：{payload.get('msg') or payload}")
+        raise RuntimeError(f"网站接口返回异常：{payload.get('msg') or payload}")
 
     data = payload["data"]
     raw_rows = data.get("list") or []
     if not isinstance(raw_rows, list):
-        raise RuntimeError("Offer星球接口没有返回岗位列表。")
+        raise RuntimeError("网站接口没有返回岗位列表。")
 
-    rows = [normalize_offer_row(row, url) for row in raw_rows if isinstance(row, dict)]
+    rows = [normalize_site_row(row, url) for row in raw_rows if isinstance(row, dict)]
+    rows = filter_export_rows(rows, cities, keywords)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    xlsx_path = out_dir / f"offer星球_校招信息_{timestamp}.xlsx"
-    write_xlsx(xlsx_path, rows, OFFER_FIELDS, "Offer星球校招")
+    xlsx_path = out_dir / f"招聘信息导出_{timestamp}.xlsx"
+    write_xlsx(xlsx_path, rows, EXPORT_FIELDS, "招聘信息")
 
     summary = {
         "source_url": url,
@@ -72,9 +94,11 @@ def export_offer_gfjianli(url: str, out_dir: Path, max_records: int = 20000, tok
         "total_reported": data.get("total"),
         "rows_exported": len(rows),
         "max_records": max_records,
+        "city_filter": cities,
+        "keyword_filter": keywords,
         "note": "If total_reported is greater than rows_exported, increase max_records or provide an authorized token.",
     }
-    (out_dir / f"offer星球_导出摘要_{timestamp}.json").write_text(
+    (out_dir / f"招聘信息导出摘要_{timestamp}.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
@@ -88,7 +112,7 @@ def fetch_json(url: str, headers: dict[str, str]) -> dict[str, Any]:
     return json.loads(raw.decode("utf-8"))
 
 
-def normalize_offer_row(row: dict[str, Any], source_url: str) -> dict[str, str]:
+def normalize_site_row(row: dict[str, Any], source_url: str) -> dict[str, str]:
     return {
         "发布时间": clean_value(row.get("recordTime")),
         "公司": clean_value(row.get("company")),
@@ -111,16 +135,51 @@ def clean_value(value: Any) -> str:
     return html.unescape(str(value)).strip()
 
 
+def split_filter_terms(value: str) -> list[str]:
+    separators = [",", "，", ";", "；", "|", "\n", "\t"]
+    text = value or ""
+    for separator in separators:
+        text = text.replace(separator, ",")
+    return [item.strip().lower() for item in text.split(",") if item.strip()]
+
+
+def filter_export_rows(rows: list[dict[str, str]], cities: str = "", keywords: str = "") -> list[dict[str, str]]:
+    city_terms = split_filter_terms(cities)
+    keyword_terms = split_filter_terms(keywords)
+    if not city_terms and not keyword_terms:
+        return rows
+
+    filtered: list[dict[str, str]] = []
+    for row in rows:
+        city_text = row.get("工作地点", "").lower()
+        keyword_text = " ".join(
+            [
+                row.get("公司", ""),
+                row.get("标题", ""),
+                row.get("行业", ""),
+                row.get("岗位", ""),
+                row.get("备注", ""),
+            ]
+        ).lower()
+        city_ok = not city_terms or any(term in city_text for term in city_terms)
+        keyword_ok = not keyword_terms or any(term in keyword_text for term in keyword_terms)
+        if city_ok and keyword_ok:
+            filtered.append(row)
+    return filtered
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Paste a supported job site URL and export an Excel workbook.")
     parser.add_argument("url")
     parser.add_argument("--out-dir", default="outputs/url_export")
     parser.add_argument("--max-records", type=int, default=20000)
     parser.add_argument("--token", default="", help="Optional site token for authorized exports.")
+    parser.add_argument("--cities", default="", help="Optional city filter, comma-separated.")
+    parser.add_argument("--keywords", default="", help="Optional title/company/position keyword filter, comma-separated.")
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
-    path = export_url(args.url, args.out_dir, args.max_records, args.token)
+    path = export_url(args.url, args.out_dir, args.max_records, args.token, args.cities, args.keywords)
     print(path)

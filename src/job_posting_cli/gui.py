@@ -22,13 +22,25 @@ DATE_RANGE_OPTIONS = {
     "近 1 年": 365,
 }
 
+BG = "#F4F7FB"
+CARD = "#FFFFFF"
+TEXT = "#172033"
+MUTED = "#64748B"
+BORDER = "#D9E2EF"
+ACCENT = "#2563EB"
+ACCENT_HOVER = "#1D4ED8"
+SOFT_ACCENT = "#EAF1FF"
+INPUT_BG = "#FBFCFE"
+
 
 class JobPostingApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title(f"招聘岗位数据工具 {__version__}")
-        self.geometry("920x680")
-        self.minsize(760, 560)
+        self.geometry("1120x840")
+        self.minsize(980, 720)
+        self.configure(background=BG)
+        self.option_add("*Font", ("Microsoft YaHei UI", 10))
 
         self.url_vars = {
             "url": tk.StringVar(),
@@ -66,18 +78,56 @@ class JobPostingApp(tk.Tk):
             "xlsx": tk.BooleanVar(value=True),
         }
 
+        self._configure_style()
         self._build_ui()
 
+    def _configure_style(self) -> None:
+        self.style = ttk.Style(self)
+        with contextlib.suppress(tk.TclError):
+            self.style.theme_use("clam")
+
+        self.style.configure(".", font=("Microsoft YaHei UI", 10), background=BG, foreground=TEXT)
+        self.style.configure("App.TFrame", background=BG)
+        self.style.configure("Header.TFrame", background=BG)
+        self.style.configure("Card.TFrame", background=CARD, relief="flat")
+        self.style.configure("Card.TLabelframe", background=CARD, bordercolor=BORDER, relief="solid")
+        self.style.configure("Card.TLabelframe.Label", background=CARD, foreground=TEXT, font=("Microsoft YaHei UI", 10, "bold"))
+        self.style.configure("TLabel", background=CARD, foreground=TEXT)
+        self.style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Microsoft YaHei UI", 22, "bold"))
+        self.style.configure("Subtitle.TLabel", background=BG, foreground=MUTED, font=("Microsoft YaHei UI", 10))
+        self.style.configure("Hint.TLabel", background=CARD, foreground=MUTED, font=("Microsoft YaHei UI", 9))
+        self.style.configure("Field.TLabel", background=CARD, foreground=TEXT, font=("Microsoft YaHei UI", 10, "bold"))
+        self.style.configure("TEntry", fieldbackground=INPUT_BG, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, padding=(8, 5))
+        self.style.configure("TCombobox", fieldbackground=INPUT_BG, bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER, padding=(8, 5))
+        self.style.configure("TCheckbutton", background=CARD, foreground=TEXT)
+        self.style.configure("Accent.TButton", background=ACCENT, foreground="#FFFFFF", bordercolor=ACCENT, focusthickness=0, padding=(16, 8))
+        self.style.map("Accent.TButton", background=[("active", ACCENT_HOVER), ("pressed", ACCENT_HOVER)], foreground=[("disabled", "#E5E7EB")])
+        self.style.configure("Secondary.TButton", background="#FFFFFF", foreground=TEXT, bordercolor=BORDER, focusthickness=0, padding=(14, 8))
+        self.style.map("Secondary.TButton", background=[("active", SOFT_ACCENT), ("pressed", SOFT_ACCENT)])
+        self.style.configure("TNotebook", background=BG, borderwidth=0, tabmargins=(0, 6, 0, 0))
+        self.style.configure("TNotebook.Tab", background="#E9EEF7", foreground=MUTED, padding=(18, 8), borderwidth=0)
+        self.style.map("TNotebook.Tab", background=[("selected", CARD), ("active", "#F8FAFC")], foreground=[("selected", TEXT), ("active", TEXT)])
+
     def _build_ui(self) -> None:
-        root = ttk.Frame(self, padding=14)
+        root = ttk.Frame(self, padding=18, style="App.TFrame")
         root.pack(fill="both", expand=True)
 
-        header = ttk.Frame(root)
-        header.pack(fill="x", pady=(0, 10))
-        ttk.Label(header, text="招聘岗位数据工具", font=("Microsoft YaHei UI", 18, "bold")).pack(side="left")
-        ttk.Label(header, text="粘贴网址、清洗 CSV、采集公开接口，一键导出 Excel。").pack(
-            side="left", padx=(14, 0)
-        )
+        header = ttk.Frame(root, style="Header.TFrame")
+        header.pack(fill="x", pady=(0, 14))
+        tk.Label(
+            header,
+            text="招聘岗位数据工具",
+            background=BG,
+            foreground=TEXT,
+            font=("Microsoft YaHei UI", 22, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            header,
+            text="粘贴网址、清洗 CSV、采集公开接口，一键导出 Excel。",
+            background=BG,
+            foreground=MUTED,
+            font=("Microsoft YaHei UI", 10),
+        ).pack(anchor="w", pady=(4, 0))
 
         notebook = ttk.Notebook(root)
         notebook.pack(fill="both", expand=True)
@@ -85,90 +135,101 @@ class JobPostingApp(tk.Tk):
         notebook.add(self._clean_tab(notebook), text="清洗 CSV")
         notebook.add(self._collect_tab(notebook), text="接口采集")
 
-        log_frame = ttk.LabelFrame(root, text="运行日志", padding=8)
-        log_frame.pack(fill="both", expand=False, pady=(10, 0))
-        self.log = tk.Text(log_frame, height=8, wrap="word")
+        log_frame = ttk.LabelFrame(root, text="运行日志", padding=12, style="Card.TLabelframe")
+        log_frame.pack(fill="both", expand=False, pady=(14, 0))
+        self.log = tk.Text(
+            log_frame,
+            height=7,
+            wrap="word",
+            borderwidth=0,
+            relief="flat",
+            background="#F8FAFC",
+            foreground=TEXT,
+            insertbackground=TEXT,
+            padx=10,
+            pady=8,
+        )
         self.log.pack(side="left", fill="both", expand=True)
         scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.log.yview)
         scrollbar.pack(side="right", fill="y")
         self.log.configure(yscrollcommand=scrollbar.set)
 
     def _url_tab(self, parent: ttk.Notebook) -> ttk.Frame:
-        frame = ttk.Frame(parent, padding=14)
+        frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         intro = ttk.Label(
             frame,
             text="把公开招聘页面网址粘贴进来，按需填写筛选条件，点击按钮导出 Excel。请只导出你有权限访问的数据。",
-            foreground="#444",
-            wraplength=760,
+            style="Hint.TLabel",
+            wraplength=820,
         )
         intro.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
         self._entry_row(frame, 1, "招聘网址", self.url_vars["url"], "粘贴公开招聘页面网址")
         self._path_row(frame, 2, "输出文件夹", self.url_vars["out_dir"], self._choose_url_out_dir)
         self._entry_row(frame, 3, "城市筛选", self.url_vars["cities"], "多个城市用逗号分隔，可留空")
         self._entry_row(frame, 4, "岗位/关键词筛选", self.url_vars["keywords"], "匹配公司、标题、行业、岗位，可留空")
-        ttk.Label(frame, text="发布日期范围").grid(row=5, column=0, sticky="w", pady=6)
+        ttk.Label(frame, text="发布日期范围", style="Field.TLabel").grid(row=5, column=0, sticky="w", pady=8, padx=(0, 12))
         ttk.Combobox(
             frame,
             textvariable=self.url_vars["date_range"],
             values=list(DATE_RANGE_OPTIONS.keys()),
             width=16,
             state="readonly",
-        ).grid(row=5, column=1, sticky="w", pady=6)
-        ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年").grid(row=5, column=2, sticky="w", padx=(8, 0))
+        ).grid(row=5, column=1, sticky="w", pady=8)
+        ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年", style="Hint.TLabel").grid(row=5, column=2, sticky="w", padx=(14, 0))
         self._entry_row(frame, 6, "最多导出条数", self.url_vars["max_records"], "筛选前最多保留多少条；可改小以快速测试")
         self._entry_row(frame, 7, "高亮关键词", self.url_vars["highlight_keywords"], "留空时使用岗位/关键词筛选")
         self._color_row(frame, 8)
         self._entry_row(frame, 9, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
 
-        actions = ttk.Frame(frame)
-        actions.grid(row=10, column=1, sticky="w", pady=(12, 0))
-        ttk.Button(actions, text="一键导出 Excel", command=self.run_url_export).pack(side="left")
-        ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
-            side="left", padx=(8, 0)
+        actions = ttk.Frame(frame, style="Card.TFrame")
+        actions.grid(row=10, column=1, sticky="w", pady=(16, 0))
+        ttk.Button(actions, text="一键导出 Excel", style="Accent.TButton", command=self.run_url_export).pack(side="left")
+        ttk.Button(actions, text="打开输出文件夹", style="Secondary.TButton", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
+            side="left", padx=(10, 0)
         )
         self._configure_grid(frame)
         return frame
 
     def _clean_tab(self, parent: ttk.Notebook) -> ttk.Frame:
-        frame = ttk.Frame(parent, padding=14)
+        frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         self._path_row(frame, 0, "输入 CSV", self.clean_vars["input_csv"], self._choose_csv)
         self._path_row(frame, 1, "输出文件夹", self.clean_vars["out_dir"], self._choose_clean_out_dir)
         self._entry_row(frame, 2, "城市筛选", self.clean_vars["cities"], "上海,北京,深圳")
         self._entry_row(frame, 3, "关键词筛选", self.clean_vars["keywords"], "AI,大模型,数据分析")
         self._entry_row(frame, 4, "最低薪资", self.clean_vars["salary_min"], "8000")
         ttk.Checkbutton(frame, text="同时导出格式化 XLSX 文件", variable=self.clean_vars["xlsx"]).grid(
-            row=5, column=1, sticky="w", pady=8
+            row=5, column=1, sticky="w", pady=10
         )
 
-        actions = ttk.Frame(frame)
-        actions.grid(row=6, column=1, sticky="w", pady=(12, 0))
-        ttk.Button(actions, text="开始清洗", command=self.run_clean).pack(side="left")
-        ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.clean_vars["out_dir"].get())).pack(
-            side="left", padx=(8, 0)
+        actions = ttk.Frame(frame, style="Card.TFrame")
+        actions.grid(row=6, column=1, sticky="w", pady=(16, 0))
+        ttk.Button(actions, text="开始清洗", style="Accent.TButton", command=self.run_clean).pack(side="left")
+        ttk.Button(actions, text="打开输出文件夹", style="Secondary.TButton", command=lambda: self._open_folder(self.clean_vars["out_dir"].get())).pack(
+            side="left", padx=(10, 0)
         )
         self._configure_grid(frame)
         return frame
 
     def _collect_tab(self, parent: ttk.Notebook) -> ttk.Frame:
-        frame = ttk.Frame(parent, padding=14)
+        frame = ttk.Frame(parent, padding=18, style="Card.TFrame")
         self._entry_row(frame, 0, "接口地址", self.collect_vars["url"], "https://example.com/api/jobs")
-        ttk.Label(frame, text="请求方法").grid(row=1, column=0, sticky="w", pady=6)
+        ttk.Label(frame, text="请求方法", style="Field.TLabel").grid(row=1, column=0, sticky="w", pady=8, padx=(0, 12))
         ttk.Combobox(frame, textvariable=self.collect_vars["method"], values=["POST", "GET"], width=12, state="readonly").grid(
-            row=1, column=1, sticky="w", pady=6
+            row=1, column=1, sticky="w", pady=8
         )
 
-        ttk.Label(frame, text="请求头 JSON").grid(row=2, column=0, sticky="nw", pady=6)
-        self.headers_text = tk.Text(frame, height=4, width=70)
+        ttk.Label(frame, text="请求头 JSON", style="Field.TLabel").grid(row=2, column=0, sticky="nw", pady=8, padx=(0, 12))
+        self.headers_text = tk.Text(frame, height=4, width=70, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
         self.headers_text.insert("1.0", "{}")
-        self.headers_text.grid(row=2, column=1, sticky="ew", pady=6)
+        self.headers_text.grid(row=2, column=1, sticky="ew", pady=8)
 
-        ttk.Label(frame, text="参数 JSON").grid(row=3, column=0, sticky="nw", pady=6)
-        self.payload_text = tk.Text(frame, height=5, width=70)
+        ttk.Label(frame, text="参数 JSON", style="Field.TLabel").grid(row=3, column=0, sticky="nw", pady=8, padx=(0, 12))
+        self.payload_text = tk.Text(frame, height=5, width=70, borderwidth=1, relief="solid", background=INPUT_BG, foreground=TEXT, padx=8, pady=6)
         self.payload_text.insert("1.0", "{}")
-        self.payload_text.grid(row=3, column=1, sticky="ew", pady=6)
+        self.payload_text.grid(row=3, column=1, sticky="ew", pady=8)
 
-        paths = ttk.Frame(frame)
-        paths.grid(row=4, column=1, sticky="ew", pady=6)
+        paths = ttk.Frame(frame, style="Card.TFrame")
+        paths.grid(row=4, column=1, sticky="ew", pady=8)
         for index, (label, key, width) in enumerate(
             [
                 ("页码", "page_param", 10),
@@ -178,11 +239,11 @@ class JobPostingApp(tk.Tk):
                 ("总页路径", "pages_path", 14),
             ]
         ):
-            ttk.Label(paths, text=label).grid(row=0, column=index * 2, sticky="w", padx=(0, 4))
-            ttk.Entry(paths, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 8))
+            ttk.Label(paths, text=label, style="Hint.TLabel").grid(row=0, column=index * 2, sticky="w", padx=(0, 5))
+            ttk.Entry(paths, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 10))
 
-        numbers = ttk.Frame(frame)
-        numbers.grid(row=5, column=1, sticky="ew", pady=6)
+        numbers = ttk.Frame(frame, style="Card.TFrame")
+        numbers.grid(row=5, column=1, sticky="ew", pady=8)
         for index, (label, key, width) in enumerate(
             [
                 ("每页数量", "page_size", 8),
@@ -192,44 +253,44 @@ class JobPostingApp(tk.Tk):
                 ("超时", "timeout", 8),
             ]
         ):
-            ttk.Label(numbers, text=label).grid(row=0, column=index * 2, sticky="w", padx=(0, 4))
-            ttk.Entry(numbers, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 8))
+            ttk.Label(numbers, text=label, style="Hint.TLabel").grid(row=0, column=index * 2, sticky="w", padx=(0, 5))
+            ttk.Entry(numbers, textvariable=self.collect_vars[key], width=width).grid(row=0, column=index * 2 + 1, padx=(0, 10))
 
         self._path_row(frame, 6, "输出文件夹", self.collect_vars["out_dir"], self._choose_collect_out_dir)
         ttk.Checkbutton(frame, text="同时导出格式化 XLSX 文件", variable=self.collect_vars["xlsx"]).grid(
-            row=7, column=1, sticky="w", pady=8
+            row=7, column=1, sticky="w", pady=10
         )
 
-        actions = ttk.Frame(frame)
-        actions.grid(row=8, column=1, sticky="w", pady=(12, 0))
-        ttk.Button(actions, text="开始采集", command=self.run_collect).pack(side="left")
-        ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.collect_vars["out_dir"].get())).pack(
-            side="left", padx=(8, 0)
+        actions = ttk.Frame(frame, style="Card.TFrame")
+        actions.grid(row=8, column=1, sticky="w", pady=(16, 0))
+        ttk.Button(actions, text="开始采集", style="Accent.TButton", command=self.run_collect).pack(side="left")
+        ttk.Button(actions, text="打开输出文件夹", style="Secondary.TButton", command=lambda: self._open_folder(self.collect_vars["out_dir"].get())).pack(
+            side="left", padx=(10, 0)
         )
         self._configure_grid(frame)
         return frame
 
     def _entry_row(self, parent: ttk.Frame, row: int, label: str, variable: tk.StringVar, placeholder: str = "") -> None:
-        ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=6)
+        ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=8, padx=(0, 12))
         entry = ttk.Entry(parent, textvariable=variable)
-        entry.grid(row=row, column=1, sticky="ew", pady=6)
+        entry.grid(row=row, column=1, sticky="ew", pady=8)
         if placeholder:
-            ttk.Label(parent, text=placeholder, foreground="#666").grid(row=row, column=2, sticky="w", padx=(8, 0))
+            ttk.Label(parent, text=placeholder, style="Hint.TLabel").grid(row=row, column=2, sticky="w", padx=(14, 0))
 
     def _path_row(self, parent: ttk.Frame, row: int, label: str, variable: tk.StringVar, command) -> None:
-        ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=6)
-        ttk.Entry(parent, textvariable=variable).grid(row=row, column=1, sticky="ew", pady=6)
-        ttk.Button(parent, text="浏览", command=command).grid(row=row, column=2, sticky="w", padx=(8, 0), pady=6)
+        ttk.Label(parent, text=label, style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=8, padx=(0, 12))
+        ttk.Entry(parent, textvariable=variable).grid(row=row, column=1, sticky="ew", pady=8)
+        ttk.Button(parent, text="浏览", style="Secondary.TButton", command=command).grid(row=row, column=2, sticky="w", padx=(14, 0), pady=8)
 
     def _color_row(self, parent: ttk.Frame, row: int) -> None:
-        ttk.Label(parent, text="高亮颜色").grid(row=row, column=0, sticky="w", pady=6)
-        color_frame = ttk.Frame(parent)
-        color_frame.grid(row=row, column=1, sticky="w", pady=6)
+        ttk.Label(parent, text="高亮颜色", style="Field.TLabel").grid(row=row, column=0, sticky="w", pady=8, padx=(0, 12))
+        color_frame = ttk.Frame(parent, style="Card.TFrame")
+        color_frame.grid(row=row, column=1, sticky="w", pady=8)
         ttk.Entry(color_frame, textvariable=self.url_vars["highlight_color"], width=12).pack(side="left")
-        ttk.Button(color_frame, text="选择颜色", command=self._choose_highlight_color).pack(side="left", padx=(8, 0))
-        self.highlight_swatch = tk.Label(color_frame, width=4, background=self.url_vars["highlight_color"].get())
-        self.highlight_swatch.pack(side="left", padx=(8, 0))
-        ttk.Label(parent, text="用于标出命中关键词的单元格").grid(row=row, column=2, sticky="w", padx=(8, 0))
+        ttk.Button(color_frame, text="选择颜色", style="Secondary.TButton", command=self._choose_highlight_color).pack(side="left", padx=(10, 0))
+        self.highlight_swatch = tk.Label(color_frame, width=4, height=1, background=self.url_vars["highlight_color"].get(), relief="flat")
+        self.highlight_swatch.pack(side="left", padx=(10, 0), ipadx=8, ipady=5)
+        ttk.Label(parent, text="用于标出命中关键词的单元格", style="Hint.TLabel").grid(row=row, column=2, sticky="w", padx=(14, 0))
 
     @staticmethod
     def _configure_grid(frame: ttk.Frame) -> None:

@@ -9,7 +9,7 @@ This is a normal CLI package. It does not require Codex, ChatGPT, OpenAI APIs, o
 ## What You Can Do
 
 - Use a Chinese beginner-friendly desktop GUI for URL-to-Excel export, CSV cleaning, and API collection.
-- Export accessible recruitment pages to Excel, with city, position/keyword, and publication-date filters.
+- Export accessible recruitment pages to Excel, with city, position/keyword, publication-date filters, and keyword cell highlighting.
 - Collect paginated public JSON APIs with polite delays and capture metadata.
 - Clean CSV exports with English and Chinese column aliases.
 - Normalize salary ranges, city text, keyword matches, and duplicate rows.
@@ -70,7 +70,7 @@ Recommended first run:
 
 1. Open `粘贴网址导出`.
 2. Paste a recruitment page URL into `招聘网址`.
-3. Fill `城市筛选`, `岗位/关键词筛选`, and `发布日期范围` if needed.
+3. Fill `城市筛选`, `岗位/关键词筛选`, `发布日期范围`, and optional highlight settings if needed.
 4. Click `一键导出 Excel`.
 5. Click `打开输出文件夹` when it finishes.
 
@@ -87,12 +87,14 @@ job-postings url "JOB_PAGE_URL" --out-dir outputs/url_export
 You can also filter the export:
 
 ```bash
-job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --published-within-days 180 --out-dir outputs/url_export
+job-postings url "JOB_PAGE_URL" --cities "Shanghai,Beijing" --keywords "AI,Algorithm" --published-within-days 180 --highlight-keywords "AI,Algorithm" --highlight-color "#FFF2CC" --out-dir outputs/url_export
 ```
 
 The tool writes `招聘信息导出_TIMESTAMP.xlsx` plus a JSON export summary. If authorized data requires a login token, use the GUI field `登录 Token（可选）` or pass:
 
 `--max-records` / the GUI field `最多导出条数` means the maximum number of source records to keep before filters are applied. It is not the final Excel row count. The final export is filtered by city, keyword, and publication-date settings. If a data source has no practical limit, there is no need to call out a limit; if the source/API has a limit, the summary JSON records both `max_export_records` and exported row count.
+
+For Excel highlighting, fill `高亮关键词` in the GUI and choose `高亮颜色`. If `高亮关键词` is empty, the URL export uses `岗位/关键词筛选` as the highlight terms. In the CLI, use `--highlight-keywords` and `--highlight-color`; colors can be `#FFFF00` or `FFFF00`.
 
 Note: URL-to-Excel export is not a browser crawler for arbitrary pages. Recruitment search pages that require login state, dynamic rendering, CAPTCHA, or anti-automation checks usually cannot be exported directly. In those cases, use an allowed platform export and process it with `清洗 CSV`, or configure `接口采集` when you have access to a public JSON API.
 

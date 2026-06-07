@@ -8,7 +8,14 @@ import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 
 
-def write_xlsx(path: Path, rows: list[dict[str, Any]], fields: list[str], sheet_name: str = "Rows") -> None:
+def write_xlsx(
+    path: Path,
+    rows: list[dict[str, Any]],
+    fields: list[str],
+    sheet_name: str = "Rows",
+    highlight_terms: list[str] | None = None,
+    highlight_color: str = "FFF2CC",
+) -> None:
     wb = openpyxl.Workbook()
     ws = wb.active
     if ws is None:
@@ -18,6 +25,12 @@ def write_xlsx(path: Path, rows: list[dict[str, Any]], fields: list[str], sheet_
     header_font = Font(bold=True)
     header_fill = PatternFill(start_color="E8E8E8", end_color="E8E8E8", fill_type="solid")
     link_font = Font(color="0563C1", underline="single")
+    terms = [term.strip().lower() for term in highlight_terms or [] if term.strip()]
+    highlight_fill = PatternFill(
+        start_color=normalize_fill_color(highlight_color),
+        end_color=normalize_fill_color(highlight_color),
+        fill_type="solid",
+    )
 
     for col_idx, field in enumerate(fields, 1):
         cell = ws.cell(row=1, column=col_idx, value=field)
@@ -34,6 +47,8 @@ def write_xlsx(path: Path, rows: list[dict[str, Any]], fields: list[str], sheet_
             if isinstance(value, str) and value.startswith(("http://", "https://")):
                 cell.hyperlink = value
                 cell.font = link_font
+            if terms and any(term in str(value).lower() for term in terms):
+                cell.fill = highlight_fill
 
     for col_idx, field in enumerate(fields, 1):
         max_len = len(field)
@@ -44,3 +59,12 @@ def write_xlsx(path: Path, rows: list[dict[str, Any]], fields: list[str], sheet_
         ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = min(max_len + 3, 60)
 
     wb.save(path)
+
+
+def normalize_fill_color(value: str) -> str:
+    color = (value or "").strip().lstrip("#").upper()
+    if len(color) == 8 and all(char in "0123456789ABCDEF" for char in color):
+        return color
+    if len(color) == 6 and all(char in "0123456789ABCDEF" for char in color):
+        return color
+    return "FFF2CC"

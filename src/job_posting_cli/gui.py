@@ -7,7 +7,7 @@ import os
 import threading
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from . import __version__
 from .clean import run as run_clean
@@ -37,6 +37,8 @@ class JobPostingApp(tk.Tk):
             "cities": tk.StringVar(),
             "keywords": tk.StringVar(),
             "date_range": tk.StringVar(value="不限"),
+            "highlight_keywords": tk.StringVar(),
+            "highlight_color": tk.StringVar(value="#FFF2CC"),
             "token": tk.StringVar(),
         }
         self.clean_vars = {
@@ -114,10 +116,12 @@ class JobPostingApp(tk.Tk):
         ).grid(row=5, column=1, sticky="w", pady=6)
         ttk.Label(frame, text="按发布时间过滤，可选最近 1 个月/半年/一年").grid(row=5, column=2, sticky="w", padx=(8, 0))
         self._entry_row(frame, 6, "最多导出条数", self.url_vars["max_records"], "筛选前最多保留多少条；可改小以快速测试")
-        self._entry_row(frame, 7, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
+        self._entry_row(frame, 7, "高亮关键词", self.url_vars["highlight_keywords"], "留空时使用岗位/关键词筛选")
+        self._color_row(frame, 8)
+        self._entry_row(frame, 9, "登录 Token（可选）", self.url_vars["token"], "通常不用填；需要授权数据时再填")
 
         actions = ttk.Frame(frame)
-        actions.grid(row=8, column=1, sticky="w", pady=(12, 0))
+        actions.grid(row=10, column=1, sticky="w", pady=(12, 0))
         ttk.Button(actions, text="一键导出 Excel", command=self.run_url_export).pack(side="left")
         ttk.Button(actions, text="打开输出文件夹", command=lambda: self._open_folder(self.url_vars["out_dir"].get())).pack(
             side="left", padx=(8, 0)
@@ -217,6 +221,16 @@ class JobPostingApp(tk.Tk):
         ttk.Entry(parent, textvariable=variable).grid(row=row, column=1, sticky="ew", pady=6)
         ttk.Button(parent, text="浏览", command=command).grid(row=row, column=2, sticky="w", padx=(8, 0), pady=6)
 
+    def _color_row(self, parent: ttk.Frame, row: int) -> None:
+        ttk.Label(parent, text="高亮颜色").grid(row=row, column=0, sticky="w", pady=6)
+        color_frame = ttk.Frame(parent)
+        color_frame.grid(row=row, column=1, sticky="w", pady=6)
+        ttk.Entry(color_frame, textvariable=self.url_vars["highlight_color"], width=12).pack(side="left")
+        ttk.Button(color_frame, text="选择颜色", command=self._choose_highlight_color).pack(side="left", padx=(8, 0))
+        self.highlight_swatch = tk.Label(color_frame, width=4, background=self.url_vars["highlight_color"].get())
+        self.highlight_swatch.pack(side="left", padx=(8, 0))
+        ttk.Label(parent, text="用于标出命中关键词的单元格").grid(row=row, column=2, sticky="w", padx=(8, 0))
+
     @staticmethod
     def _configure_grid(frame: ttk.Frame) -> None:
         frame.columnconfigure(1, weight=1)
@@ -234,6 +248,12 @@ class JobPostingApp(tk.Tk):
 
     def _choose_collect_out_dir(self) -> None:
         self._choose_dir(self.collect_vars["out_dir"])
+
+    def _choose_highlight_color(self) -> None:
+        _, color = colorchooser.askcolor(color=self.url_vars["highlight_color"].get(), title="选择高亮颜色")
+        if color:
+            self.url_vars["highlight_color"].set(color)
+            self.highlight_swatch.configure(background=color)
 
     @staticmethod
     def _choose_dir(variable: tk.StringVar) -> None:
@@ -268,10 +288,22 @@ class JobPostingApp(tk.Tk):
         token = self.url_vars["token"].get().strip()
         cities = self.url_vars["cities"].get().strip()
         keywords = self.url_vars["keywords"].get().strip()
+        highlight_keywords = self.url_vars["highlight_keywords"].get().strip()
+        highlight_color = self.url_vars["highlight_color"].get().strip() or "#FFF2CC"
         published_within_days = DATE_RANGE_OPTIONS.get(self.url_vars["date_range"].get())
         self._run_background(
             "网址导出 Excel",
-            lambda: export_url(url, out_dir, max_records, token, cities, keywords, published_within_days),
+            lambda: export_url(
+                url,
+                out_dir,
+                max_records,
+                token,
+                cities,
+                keywords,
+                published_within_days,
+                highlight_keywords,
+                highlight_color,
+            ),
             out_dir,
         )
 

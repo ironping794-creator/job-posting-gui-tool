@@ -36,6 +36,8 @@ def export_url(
     cities: str = "",
     keywords: str = "",
     published_within_days: int | None = None,
+    highlight_keywords: str = "",
+    highlight_color: str = "FFF2CC",
 ) -> Path:
     normalized = url.strip()
     if not normalized:
@@ -51,6 +53,8 @@ def export_url(
             cities=cities,
             keywords=keywords,
             published_within_days=published_within_days,
+            highlight_keywords=highlight_keywords,
+            highlight_color=highlight_color,
         )
     static_path = export_static_html_page(
         normalized,
@@ -59,6 +63,8 @@ def export_url(
         cities=cities,
         keywords=keywords,
         published_within_days=published_within_days,
+        highlight_keywords=highlight_keywords,
+        highlight_color=highlight_color,
     )
     if static_path is not None:
         return static_path
@@ -83,6 +89,8 @@ def export_known_recruitment_site(
     cities: str = "",
     keywords: str = "",
     published_within_days: int | None = None,
+    highlight_keywords: str = "",
+    highlight_color: str = "FFF2CC",
 ) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     query = {"limit": max_records}
@@ -108,7 +116,14 @@ def export_known_recruitment_site(
     rows = filter_export_rows(rows, cities, keywords, published_within_days)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     xlsx_path = out_dir / f"招聘信息导出_{timestamp}.xlsx"
-    write_xlsx(xlsx_path, rows, EXPORT_FIELDS, "招聘信息")
+    write_xlsx(
+        xlsx_path,
+        rows,
+        EXPORT_FIELDS,
+        "招聘信息",
+        split_filter_terms(highlight_keywords or keywords),
+        highlight_color,
+    )
 
     summary = {
         "source_url": url,
@@ -122,6 +137,8 @@ def export_known_recruitment_site(
         "city_filter": cities,
         "keyword_filter": keywords,
         "published_within_days": published_within_days,
+        "highlight_keywords": highlight_keywords or keywords,
+        "highlight_color": highlight_color,
         "note": "max_export_records is the maximum number of source records kept before filters are applied. The final Excel row count may be lower after filters.",
     }
     (out_dir / f"招聘信息导出摘要_{timestamp}.json").write_text(
@@ -152,6 +169,8 @@ def export_static_html_page(
     cities: str = "",
     keywords: str = "",
     published_within_days: int | None = None,
+    highlight_keywords: str = "",
+    highlight_color: str = "FFF2CC",
 ) -> Path | None:
     html_text = fetch_text(url)
     rows = extract_nuxt_job_rows(html_text, url)
@@ -163,7 +182,14 @@ def export_static_html_page(
     out_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     xlsx_path = out_dir / f"招聘信息导出_{timestamp}.xlsx"
-    write_xlsx(xlsx_path, rows, EXPORT_FIELDS, "招聘信息")
+    write_xlsx(
+        xlsx_path,
+        rows,
+        EXPORT_FIELDS,
+        "招聘信息",
+        split_filter_terms(highlight_keywords or keywords),
+        highlight_color,
+    )
     summary = {
         "source_url": url,
         "export_time": datetime.now().isoformat(timespec="seconds"),
@@ -174,6 +200,8 @@ def export_static_html_page(
         "city_filter": cities,
         "keyword_filter": keywords,
         "published_within_days": published_within_days,
+        "highlight_keywords": highlight_keywords or keywords,
+        "highlight_color": highlight_color,
         "note": "This export used structured data embedded in the page HTML. It may only include the records present in the initial page payload.",
     }
     (out_dir / f"招聘信息导出摘要_{timestamp}.json").write_text(
@@ -365,6 +393,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cities", default="", help="Optional city filter, comma-separated.")
     parser.add_argument("--keywords", default="", help="Optional title/company/position keyword filter, comma-separated.")
     parser.add_argument("--published-within-days", type=int, default=None, help="Only keep records published in the last N days.")
+    parser.add_argument("--highlight-keywords", default="", help="Optional Excel cell highlight keywords. Defaults to --keywords when omitted.")
+    parser.add_argument("--highlight-color", default="FFF2CC", help="Excel highlight fill color, for example FFF2CC or #FFFF00.")
     return parser
 
 
@@ -378,5 +408,7 @@ def main(argv: list[str] | None = None) -> None:
         args.cities,
         args.keywords,
         args.published_within_days,
+        args.highlight_keywords,
+        args.highlight_color,
     )
     print(path)

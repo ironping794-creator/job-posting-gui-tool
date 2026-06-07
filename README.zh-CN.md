@@ -9,7 +9,7 @@
 ## 能做什么
 
 - 提供中文桌面 GUI，适合先从粘贴网址、点选文件和填写表单开始。
-- 支持把可访问的招聘页面导出为 Excel，并可按城市、岗位/关键词、发布日期范围筛选。
+- 支持把可访问的招聘页面导出为 Excel，并可按城市、岗位/关键词、发布日期范围筛选和关键词高亮。
 - 从公开分页 JSON API 采集岗位数据，并记录采集元信息。
 - 清洗 CSV 导出文件，自动识别常见中英文列名。
 - 规范化薪资区间、城市、关键词匹配和重复岗位。
@@ -70,7 +70,7 @@ job-postings-gui
 
 1. 打开 `粘贴网址导出`。
 2. 把招聘页面网址粘贴到 `招聘网址`。
-3. 按需填写 `城市筛选`、`岗位/关键词筛选`，并选择 `发布日期范围`。
+3. 按需填写 `城市筛选`、`岗位/关键词筛选`，选择 `发布日期范围`，也可以填写高亮关键词并选择颜色。
 4. 点击 `一键导出 Excel`。
 5. 完成后点击 `打开输出文件夹` 查看 `.xlsx`。
 
@@ -87,12 +87,14 @@ job-postings url "招聘页面网址" --out-dir outputs/url_export
 也可以增加筛选：
 
 ```bash
-job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --published-within-days 180 --out-dir outputs/url_export
+job-postings url "招聘页面网址" --cities "上海,北京" --keywords "算法,AI" --published-within-days 180 --highlight-keywords "算法,AI" --highlight-color "#FFF2CC" --out-dir outputs/url_export
 ```
 
 工具会生成 `招聘信息导出_时间戳.xlsx` 和导出摘要 JSON。如果网站需要登录授权，可在 GUI 的 `登录 Token（可选）` 中填写 token，或用命令行参数：
 
 `--max-records` / GUI 里的 `最多导出条数` 指的是筛选前最多保留多少条原始记录，不是最终 Excel 一定会导出多少条。最终导出数量会再经过城市、关键词和发布日期范围筛选。如果数据源本身没有条数上限，就不用额外说明限制；如果数据源/API 有上限，工具会在摘要 JSON 里记录 `max_export_records` 和导出数量。
+
+如果想在 Excel 里高亮关键词，GUI 里填写 `高亮关键词` 并点击 `选择颜色`。如果 `高亮关键词` 留空，网址导出会默认使用 `岗位/关键词筛选` 作为高亮词。命令行可使用 `--highlight-keywords` 和 `--highlight-color`，颜色支持 `#FFFF00` 或 `FFFF00` 这样的写法。
 
 注意：粘贴网址导出不是浏览器自动爬取任意网页。需要登录、动态渲染、验证码或风控校验的招聘搜索页，通常不能直接抓取；这类情况请优先使用平台允许的导出文件，再用 `清洗 CSV` 处理，或在你有公开 JSON API 的前提下使用 `接口采集`。
 

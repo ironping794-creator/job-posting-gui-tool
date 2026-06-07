@@ -5,7 +5,7 @@ import unittest
 import openpyxl
 
 from job_posting_cli.clean import clean_rows, filter_rows, parse_salary, write_csv
-from job_posting_cli.xlsx import write_xlsx
+from job_posting_cli.xlsx import normalize_fill_color, write_xlsx
 
 
 class CleanTests(unittest.TestCase):
@@ -60,6 +60,18 @@ class CleanTests(unittest.TestCase):
             write_xlsx(xlsx_path, rows, ["title", "detail_url"], "Jobs")
             wb = openpyxl.load_workbook(xlsx_path)
             self.assertEqual(wb.active["B2"].hyperlink.target, "https://example.com/jobs/1")
+
+    def test_xlsx_highlights_keyword_cells(self):
+        rows = [{"title": "AI Analyst", "company": "Example"}]
+        with tempfile.TemporaryDirectory() as tmp:
+            xlsx_path = Path(tmp) / "highlight.xlsx"
+            write_xlsx(xlsx_path, rows, ["title", "company"], "Jobs", ["AI"], "#FFFF00")
+            wb = openpyxl.load_workbook(xlsx_path)
+
+            self.assertEqual(wb.active["A2"].fill.fill_type, "solid")
+            self.assertTrue(wb.active["A2"].fill.fgColor.rgb.endswith("FFFF00"))
+            self.assertNotEqual(wb.active["B2"].fill.fill_type, "solid")
+            self.assertEqual(normalize_fill_color("#fff2cc"), "FFF2CC")
 
 
 if __name__ == "__main__":

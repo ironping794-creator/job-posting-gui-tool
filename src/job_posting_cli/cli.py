@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> None:
             args.cities,
             args.keywords,
             args.published_within_days,
+            args.highlight_keywords,
+            args.highlight_color,
         )
         print(path)
     elif args.command == "collect":
